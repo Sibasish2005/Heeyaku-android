@@ -2,6 +2,8 @@ import { NativeModules } from 'react-native';
 
 const { CallTracker } = NativeModules;
 
+export type EmployeeRole = 'CEO' | 'TEAM_LEAD' | 'HR' | 'BDA' | string;
+
 export interface EmployeeProfile {
   id: string;
   employeeCode: string;
@@ -9,7 +11,8 @@ export interface EmployeeProfile {
   email: string;
   phoneNumber: string;
   team?: string | null;
-  role?: string;
+  teamId?: string | null;
+  role?: EmployeeRole;
 }
 
 export interface EmployeeSession {

@@ -1,49 +1,59 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface HeeyakuLogoProps {
   size?: number;
   showBackground?: boolean;
+  withText?: boolean;
+  withTagline?: boolean;
+  direction?: 'row' | 'column';
+  textColor?: string;
+  taglineColor?: string;
 }
 
 /**
- * Official HEEYAKU Brand Logo
- * Recreated with exact proportional geometry:
- * - 3 white horizontal cascading pills (right-aligned)
- * - 1 Electric Blue (#2563EB) accent dot on the bottom-left
- * - Dark Navy (#0B1F33) rounded container
+ * Official HEEYAKU Brand Logo Component
+ * Pixel-perfect alignment with the Web SVG Design System:
+ * - Top bar: 64 x 13 (rx 4.5)
+ * - Middle bar: 41 x 13 (rx 4.5, right-aligned)
+ * - Bottom row: Blue Dot (#2563EB, r=5.5) + Short Bar 25 x 13 (rx 4.5)
+ * - Optional Web Wordmark ("HEEYAKU") and Tagline ("A SUDDEN LEAP TO FUTURE")
  */
 export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
   size = 48,
   showBackground = true,
+  withText = false,
+  withTagline = false,
+  direction = 'row',
+  textColor = '#FFFFFF',
+  taglineColor = '#94A3B8',
 }) => {
-  // Base SVG viewBox is 64x64
+  // Base SVG grid is 64 x 54
   const scale = size / 64;
+  const barHeight = 11.5 * scale;
+  const barRadius = 4 * scale;
+  const dotSize = 10 * scale;
+  const iconHeight = 48 * scale;
+  const containerRadius = 14 * scale;
 
-  const barHeight = 9.75 * scale;
-  const barRadius = 3.5 * scale;
-  const dotRadius = 4.5 * scale;
-  const cornerRadius = 14 * scale;
-
-  return (
+  const iconElement = (
     <View
       style={[
-        styles.container,
+        styles.iconContainer,
         {
           width: size,
           height: size,
-          borderRadius: cornerRadius,
+          borderRadius: containerRadius,
           backgroundColor: showBackground ? '#0B1F33' : 'transparent',
         },
       ]}>
-      {/* Content wrapper with proportional padding */}
       <View
         style={{
           width: 48 * scale,
-          height: 38.25 * scale,
+          height: iconHeight,
           justifyContent: 'space-between',
         }}>
-        {/* Top Bar (Longest: 48) */}
+        {/* Top Bar (Full width: 64 in grid) */}
         <View
           style={{
             width: 48 * scale,
@@ -53,7 +63,7 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
           }}
         />
 
-        {/* Middle Bar (Medium: 30.75, right-aligned) */}
+        {/* Middle Bar (41 in 64 grid -> 64%) */}
         <View
           style={{
             width: 30.75 * scale,
@@ -64,7 +74,7 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
           }}
         />
 
-        {/* Bottom Row: Electric Blue Dot + Short Bar (18.75) */}
+        {/* Bottom Row: Dot + Short Bar (25 in 64 grid -> 39%) */}
         <View
           style={{
             flexDirection: 'row',
@@ -73,18 +83,18 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
             width: '100%',
             height: barHeight,
           }}>
-          {/* Accent Dot (cx=6 in 48 grid -> positioned on left) */}
+          {/* Electric Blue Dot */}
           <View
             style={{
-              width: dotRadius * 2,
-              height: dotRadius * 2,
-              borderRadius: dotRadius,
+              width: dotSize,
+              height: dotSize,
+              borderRadius: dotSize / 2,
               backgroundColor: '#2563EB',
               marginLeft: 1.5 * scale,
             }}
           />
 
-          {/* Short Bar (18.75) */}
+          {/* Short Bar */}
           <View
             style={{
               width: 18.75 * scale,
@@ -97,12 +107,84 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
       </View>
     </View>
   );
+
+  if (!withText) {
+    return iconElement;
+  }
+
+  const isColumn = direction === 'column';
+
+  return (
+    <View
+      style={[
+        isColumn ? styles.lockupColumn : styles.lockupRow,
+        { alignItems: 'center' },
+      ]}>
+      {iconElement}
+      <View
+        style={[
+          isColumn ? styles.textColumn : styles.textRow,
+          { alignItems: isColumn ? 'center' : 'flex-start' },
+        ]}>
+        <Text
+          style={[
+            styles.brandTitle,
+            {
+              color: textColor,
+              fontSize: Math.max(16, Math.round(size * 0.42)),
+            },
+          ]}>
+          HEEYAKU
+        </Text>
+        {withTagline && (
+          <Text
+            style={[
+              styles.brandTagline,
+              {
+                color: taglineColor,
+                fontSize: Math.max(8, Math.round(size * 0.2)),
+              },
+            ]}>
+            A SUDDEN LEAP TO FUTURE
+          </Text>
+        )}
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
+  lockupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  lockupColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+  },
+  textRow: {
+    justifyContent: 'center',
+  },
+  textColumn: {
+    alignItems: 'center',
+  },
+  brandTitle: {
+    fontWeight: '900',
+    letterSpacing: 3.5,
+    textTransform: 'uppercase',
+  },
+  brandTagline: {
+    fontWeight: '700',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 3,
+  },
 });
+

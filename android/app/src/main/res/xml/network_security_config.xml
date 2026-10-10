@@ -7,11 +7,10 @@
         </trust-anchors>
     </base-config>
 
-    <!-- Permit cleartext exclusively for local dev server (Metro bundler) -->
+    <!-- Permit cleartext exclusively for ADB-connected dev server (localhost / 127.0.0.1) -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>
 
     <debug-overrides>

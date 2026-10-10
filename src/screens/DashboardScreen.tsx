@@ -90,7 +90,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <HeeyakuLogo size={42} />
           <View style={styles.brandingTextContainer}>
             <Text style={styles.brandTitle}>HEEYAKU</Text>
-            <Text style={styles.brandSubtitle}>Counselor Workspace</Text>
+            <Text style={styles.brandSubtitle}>BDA Workspace</Text>
           </View>
         </View>
 

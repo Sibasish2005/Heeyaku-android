@@ -127,12 +127,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Employee Identity Card */}
       <Card variant="default" style={styles.card}>
         <View style={styles.profileRow}>
-          <Avatar name={profile?.name || 'Associate'} size={54} />
+          <Avatar name={profile?.name || 'BDA Associate'} size={54} />
           <View style={styles.profileDetails}>
-            <Text style={styles.employeeName}>{profile?.name || 'Staff Member'}</Text>
-            <Text style={styles.employeeRole}>
-              {profile?.role || profile?.team || 'Business Development Associate'}
-            </Text>
+            <Text style={styles.employeeName}>{profile?.name || 'BDA Associate'}</Text>
+            <View style={styles.roleBadgeContainer}>
+              <Text style={styles.employeeRole}>
+                Business Development Associate (BDA)
+              </Text>
+            </View>
           </View>
         </View>
       </Card>
@@ -171,7 +173,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Official Role</Text>
-          <Text style={styles.infoValue}>Business Development Associate</Text>
+          <Text style={styles.infoValue}>Business Development Associate (BDA)</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Assigned Team</Text>
+          <Text style={styles.infoValue}>{profile?.team || 'General'}</Text>
         </View>
         <View style={styles.infoRowLast}>
           <Text style={styles.infoLabel}>Contact Number</Text>
@@ -305,6 +311,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
+  },
+  roleBadgeContainer: {
+    marginTop: 2,
   },
   employeeRole: {
     fontSize: 12,

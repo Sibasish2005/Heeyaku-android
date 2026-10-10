@@ -1,15 +1,25 @@
 /**
  * HEEYAKU Mobile API Configuration.
- * Production Domain: https://heeyaku.vercel.app
+ * Configured for USB/ADB Connected Android Device (adb reverse tcp:3000 tcp:3000)
  */
-export const API_BASE_URL = 'https://heeyaku.vercel.app';
+export const BACKEND_PRESETS = {
+  ADB_DEVICE: 'http://localhost:3000',
+  PRODUCTION: 'https://heeyaku.vercel.app',
+} as const;
+
+export let API_BASE_URL: string = BACKEND_PRESETS.ADB_DEVICE;
+
+export function setApiBaseUrl(url: string): void {
+  API_BASE_URL = url.trim().replace(/\/+$/, '');
+}
 
 export const API_ENDPOINTS = {
-  login: `${API_BASE_URL}/api/employee/auth/login`,
-  me: `${API_BASE_URL}/api/employee/auth/me`,
-  leads: `${API_BASE_URL}/api/employee/leads`,
+  get login() { return `${API_BASE_URL}/api/employee/auth/login`; },
+  get me() { return `${API_BASE_URL}/api/employee/auth/me`; },
+  get leads() { return `${API_BASE_URL}/api/employee/leads`; },
   leadDisposition: (leadId: string) => `${API_BASE_URL}/api/employee/leads/${leadId}/disposition`,
-  syncCalls: `${API_BASE_URL}/api/employee/calls/sync`,
-  analytics: `${API_BASE_URL}/api/employee/analytics`,
+  get syncCalls() { return `${API_BASE_URL}/api/employee/calls/sync`; },
+  get analytics() { return `${API_BASE_URL}/api/employee/analytics`; },
 };
+
 
