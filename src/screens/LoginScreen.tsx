@@ -35,6 +35,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       return;
     }
 
+    if (password.trim().length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
+      return;
+    }
+
     setErrorMessage(null);
     setLoading(true);
 
