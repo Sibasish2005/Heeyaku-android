@@ -110,6 +110,14 @@ export default function App() {
       }
     }
     checkAuth();
+
+    const unsubscribe = authStorage.onUnauthorized(() => {
+      setCurrentEmployee(null);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   if (!sessionChecked) {

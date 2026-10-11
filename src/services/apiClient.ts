@@ -91,7 +91,9 @@ async function authenticatedRequest(url: string, options: RequestInit = {}): Pro
 
     const parsed = await parseResponse(response);
     if (parsed.isUnauthorized) {
-      console.warn('[API] Received 401 Unauthorized, session may be invalid');
+      console.warn('[API] Received 401 Unauthorized, clearing session');
+      await authStorage.clearSession();
+      authStorage.notifyUnauthorized();
     }
     return parsed;
   } catch (err: unknown) {

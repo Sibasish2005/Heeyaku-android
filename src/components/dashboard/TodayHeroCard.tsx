@@ -37,10 +37,7 @@ export const TodayHeroCard: React.FC<TodayHeroCardProps> = ({
           <Text style={styles.shiftText}>Active Shift</Text>
         </View>
 
-        <View style={styles.syncBadge}>
-          <View style={styles.pulseDot} />
-          <Text style={styles.syncBadgeText}>Live</Text>
-        </View>
+        <Text style={styles.syncStatusText}>Live</Text>
       </View>
 
       {/* Main Focus: Connected Talk Time */}
@@ -147,28 +144,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#94A3B8',
   },
-  syncBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.25)',
-  },
-  pulseDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#22C55E',
-  },
-  syncBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4ADE80',
-    letterSpacing: 0.4,
+  syncStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
   },
   heroSection: {
     marginBottom: 16,

@@ -95,12 +95,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
 
         <View style={styles.headerRight}>
-          <View style={[styles.statusBadge, isListening ? styles.statusBadgeActive : styles.statusBadgeIdle]}>
-            <View style={[styles.statusIndicatorDot, isListening ? styles.dotActive : styles.dotIdle]} />
-            <Text style={[styles.statusBadgeText, isListening ? styles.textActive : styles.textIdle]}>
-              {isListening ? 'Tracking Active' : 'Standby'}
-            </Text>
-          </View>
+          <Text style={[styles.headerStatusText, isListening ? styles.textActive : styles.textIdle]}>
+            {isListening ? '• Tracking active' : '• Standby'}
+          </Text>
         </View>
       </View>
 
@@ -123,10 +120,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Recent Activity from Today */}
       <View style={styles.recentsHeaderRow}>
         <View style={styles.recentsTitleGroup}>
-          <Text style={styles.sectionHeader}>{"TODAY'S CALL ACTIVITY"}</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{recentCalls.length}</Text>
-          </View>
+          <Text style={styles.sectionHeader}>{`TODAY'S CALL ACTIVITY (${recentCalls.length})`}</Text>
         </View>
 
         <TouchableOpacity activeOpacity={0.7} onPress={onNavigateToCalls} style={styles.viewAllButton}>
@@ -209,37 +203,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  statusBadgeActive: {
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    borderColor: 'rgba(34, 197, 94, 0.3)',
-  },
-  statusBadgeIdle: {
-    backgroundColor: 'rgba(100, 116, 139, 0.12)',
-    borderColor: 'rgba(100, 116, 139, 0.25)',
-  },
-  statusIndicatorDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotActive: {
-    backgroundColor: '#22C55E',
-  },
-  dotIdle: {
-    backgroundColor: '#94A3B8',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+  headerStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   textActive: {
     color: '#4ADE80',
@@ -264,17 +230,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#8E9BB5',
     letterSpacing: 0.8,
-  },
-  countBadge: {
-    backgroundColor: '#1E2436',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  countBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#38BDF8',
   },
   viewAllButton: {
     paddingVertical: 4,

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -29,6 +30,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isIdentifierFocused, setIsIdentifierFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+
+  const scrollRef = useRef<any>(null);
   const passwordInputRef = useRef<any>(null);
 
   // Server URL Configuration state
@@ -45,6 +48,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setCurrentServer(API_BASE_URL);
   }, []);
 
+  // Ensure inputs stay visible when keyboard opens on small screens
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      if (isPasswordFocused) {
+        scrollRef.current?.scrollTo({ y: 120, animated: true });
+      }
+    });
+    return () => {
+      showSub.remove();
+    };
+  }, [isPasswordFocused]);
+
   const testServerConnection = async (targetUrl: string) => {
     setIsTestingServer(true);
     setServerTestResult(null);
@@ -58,11 +73,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       });
       clearTimeout(timeoutId);
 
-      // If we got a response back (200, 400, 405), the server is alive and reachable!
       if (res.status === 200 || res.status === 405 || res.status === 400) {
         setServerTestResult({
           success: true,
-          message: 'Connected successfully! Server is online and responding.',
+          message: 'Connected successfully. Server is online.',
         });
       } else {
         setServerTestResult({
@@ -74,7 +88,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       const msg = err instanceof Error ? err.message : 'Connection failed';
       setServerTestResult({
         success: false,
-        message: `Cannot reach ${cleanUrl}: ${msg}`,
+        message: `Cannot reach server: ${msg}`,
       });
     } finally {
       setIsTestingServer(false);
@@ -92,6 +106,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   };
 
   const handleLogin = async () => {
+    Keyboard.dismiss();
+
     if (!identifier.trim() || !password.trim()) {
       setErrorMessage('Please enter your Employee ID or Email and password.');
       return;
@@ -112,10 +128,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         return;
       }
 
-      // Enforce BDA-only role access
       if (res.employee?.role && res.employee.role !== 'BDA') {
         setErrorMessage(
-          'Mobile app access is restricted to Business Development Associates (BDA). For administrative or team lead access, please log in via the Web Portal.'
+          'Mobile app access is restricted to Business Development Associates (BDA). Please log in via the Web Portal.'
         );
         return;
       }
@@ -127,7 +142,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
       onLoginSuccess(res.employee);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not connect to HEEYAKU server.';
+      const message = err instanceof Error ? err.message : 'Could not connect to server.';
       setErrorMessage(message);
     } finally {
       setLoading(false);
@@ -139,164 +154,132 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         
-        {/* Brand Header Lockup aligned with Web */}
+        {/* Minimal Clean Header */}
         <View style={styles.brandHeader}>
-          <HeeyakuLogo
-            size={48}
-            withText={true}
-            withTagline={true}
-            direction="column"
-            textColor="#FFFFFF"
-            taglineColor="#94A3B8"
-          />
-          <View style={styles.workspaceBadge}>
-            <View style={styles.workspaceDot} />
-            <Text style={styles.workspaceBadgeText}>BDA Telephony Workspace</Text>
-          </View>
+          <HeeyakuLogo size={40} />
+          <Text style={styles.brandTitle}>HEEYAKU</Text>
+          <Text style={styles.brandSubtitle}>Sign in to your employee account</Text>
         </View>
 
-        {/* Main Auth Card */}
+        {/* Clean, Normal Login Card */}
         <View style={styles.card}>
-          <View style={styles.titleSection}>
-            <Text style={styles.loginTitle}>BDA Sign In</Text>
-            <Text style={styles.loginDescription}>
-              Enter your BDA credentials to access your assigned leads and tele-calling dashboard.
-            </Text>
-          </View>
-
-          {/* BDA Focus Role Badge */}
-          <View style={styles.rolesRow}>
-            <View style={styles.roleChip}>
-              <View style={styles.bdaDot} />
-              <Text style={styles.roleChipText}>BUSINESS DEVELOPMENT ASSOCIATE (BDA)</Text>
-            </View>
-          </View>
-
           {errorMessage && (
             <View style={styles.errorContainer}>
-              <View style={styles.errorIconDot} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           )}
 
-          {/* Inputs Section */}
-          <View style={styles.formSection}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Employee Code or Email</Text>
+          {/* Employee ID or Email Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Employee ID or Email</Text>
+            <TextInput
+              value={identifier}
+              onChangeText={(val) => {
+                setIdentifier(val);
+                setErrorMessage(null);
+              }}
+              onFocus={() => {
+                setIsIdentifierFocused(true);
+              }}
+              onBlur={() => setIsIdentifierFocused(false)}
+              placeholder="e.g. EMP-1001 or email@heeyaku.com"
+              placeholderTextColor="#64748B"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              autoComplete="username"
+              textContentType="username"
+              style={[
+                styles.input,
+                isIdentifierFocused && styles.inputFocused,
+              ]}
+            />
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.passwordWrapper}>
               <TextInput
-                value={identifier}
+                ref={passwordInputRef}
+                value={password}
                 onChangeText={(val) => {
-                  setIdentifier(val);
+                  setPassword(val);
                   setErrorMessage(null);
                 }}
-                onFocus={() => setIsIdentifierFocused(true)}
-                onBlur={() => setIsIdentifierFocused(false)}
-                placeholder="e.g. EMP-1001 or bda@heeyaku.com"
-                placeholderTextColor={COLORS.textTertiary}
+                onFocus={() => {
+                  setIsPasswordFocused(true);
+                  scrollRef.current?.scrollTo({ y: 120, animated: true });
+                }}
+                onBlur={() => setIsPasswordFocused(false)}
+                placeholder="Enter your password"
+                placeholderTextColor="#64748B"
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                returnKeyType="next"
-                blurOnSubmit={false}
-                onSubmitEditing={() => passwordInputRef.current?.focus()}
-                autoComplete="username"
-                textContentType="username"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+                autoComplete="current-password"
+                textContentType="password"
                 style={[
                   styles.input,
-                  isIdentifierFocused && styles.inputFocused,
+                  styles.passwordInput,
+                  isPasswordFocused && styles.inputFocused,
                 ]}
               />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.passwordWrapper}>
-                <TextInput
-                  ref={passwordInputRef}
-                  value={password}
-                  onChangeText={(val) => {
-                    setPassword(val);
-                    setErrorMessage(null);
-                  }}
-                  onFocus={() => setIsPasswordFocused(true)}
-                  onBlur={() => setIsPasswordFocused(false)}
-                  placeholder="Enter your password"
-                  placeholderTextColor={COLORS.textTertiary}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  returnKeyType="go"
-                  onSubmitEditing={handleLogin}
-                  autoComplete="current-password"
-                  textContentType="password"
-                  style={[
-                    styles.input,
-                    styles.passwordInput,
-                    isPasswordFocused && styles.inputFocused,
-                  ]}
-                />
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.passwordToggle}>
-                  <Text style={styles.passwordToggleText}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.passwordToggle}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.passwordToggleText}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Submit Action */}
+          {/* Clean Normal Sign In Button */}
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleLogin}
             disabled={loading}
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}>
             {loading ? (
-              <ActivityIndicator color={COLORS.monoWhite} size="small" />
+              <ActivityIndicator color="#090A0E" size="small" />
             ) : (
-              <Text style={styles.submitButtonText}>Sign In to BDA Workspace</Text>
+              <Text style={styles.submitButtonText}>Sign In</Text>
             )}
           </TouchableOpacity>
-
-          {/* Server Connection Indicator */}
-          <View style={styles.serverSection}>
-            <View style={styles.serverRow}>
-              <View style={styles.serverDot} />
-              <Text style={styles.serverLabel} numberOfLines={1}>
-                Server:{' '}
-                <Text style={styles.serverValue}>
-                  {currentServer.replace(/^https?:\/\//, '')}
-                </Text>
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setCustomServerInput(currentServer);
-                  setServerTestResult(null);
-                  setShowServerModal(true);
-                }}
-                style={styles.serverChangeBtn}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.serverChangeText}>Change</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
 
-        {/* Security & RBAC Footer */}
-        <View style={styles.footerSection}>
-          <Text style={styles.footerText}>
-            HEEYAKU BDA Telephony • Encrypted Mobile Session
+        {/* Minimal Understated Server Footer */}
+        <View style={styles.footerRow}>
+          <Text style={styles.serverInfoText}>
+            Server: {currentServer.replace(/^https?:\/\//, '')}
           </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setCustomServerInput(currentServer);
+              setServerTestResult(null);
+              setShowServerModal(true);
+            }}
+            style={styles.changeServerButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.changeServerText}>Change</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
 
-      {/* Server Configuration Modal */}
+      {/* Clean Server Configuration Modal */}
       <Modal
         visible={showServerModal}
         transparent={true}
@@ -304,9 +287,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         onRequestClose={() => setShowServerModal(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Backend Server Connection</Text>
+            <Text style={styles.modalTitle}>Server Connection</Text>
             <Text style={styles.modalSubtitle}>
-              Select the server endpoint for BDA telephony and CRM synchronization.
+              Configure the backend endpoint for mobile synchronization.
             </Text>
 
             {/* Presets */}
@@ -320,12 +303,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   setCustomServerInput(BACKEND_PRESETS.PRODUCTION);
                   testServerConnection(BACKEND_PRESETS.PRODUCTION);
                 }}>
-                <View style={styles.presetHeader}>
-                  <Text style={styles.presetName}>Cloud Production</Text>
-                  <View style={styles.badgeCloud}>
-                    <Text style={styles.badgeCloudText}>Live SSL</Text>
-                  </View>
-                </View>
+                <Text style={styles.presetName}>Cloud Production (Default)</Text>
                 <Text style={styles.presetUrl}>{BACKEND_PRESETS.PRODUCTION}</Text>
               </TouchableOpacity>
 
@@ -338,23 +316,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   setCustomServerInput(BACKEND_PRESETS.ADB_DEVICE);
                   testServerConnection(BACKEND_PRESETS.ADB_DEVICE);
                 }}>
-                <View style={styles.presetHeader}>
-                  <Text style={styles.presetName}>Local USB / ADB Bridge</Text>
-                  <View style={styles.badgeDev}>
-                    <Text style={styles.badgeDevText}>Dev</Text>
-                  </View>
-                </View>
+                <Text style={styles.presetName}>Local USB / Dev Bridge</Text>
                 <Text style={styles.presetUrl}>{BACKEND_PRESETS.ADB_DEVICE}</Text>
               </TouchableOpacity>
             </View>
 
             {/* Custom URL Input */}
             <View style={styles.customSection}>
-              <Text style={styles.customLabel}>Server URL (or Local IP)</Text>
+              <Text style={styles.customLabel}>Custom Server URL</Text>
               <TextInput
                 value={customServerInput}
                 onChangeText={setCustomServerInput}
-                placeholder="https://heeyaku.vercel.app or http://192.168.1.X:3000"
+                placeholder="https://heeyaku.vercel.app"
                 placeholderTextColor="#64748B"
                 style={styles.customInput}
                 autoCapitalize="none"
@@ -368,9 +341,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               disabled={isTestingServer}
               onPress={() => testServerConnection(customServerInput)}>
               {isTestingServer ? (
-                <ActivityIndicator size="small" color="#38BDF8" />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.testBtnText}>⚡ Test Connection</Text>
+                <Text style={styles.testBtnText}>Test Connection</Text>
               )}
             </TouchableOpacity>
 
@@ -401,7 +374,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <TouchableOpacity
                 style={styles.modalSaveBtn}
                 onPress={() => handleApplyServer(customServerInput)}>
-                <Text style={styles.modalSaveText}>Save & Apply</Text>
+                <Text style={styles.modalSaveText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -418,315 +391,182 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xxxl,
+    paddingHorizontal: 24,
+    paddingTop: 56,
+    paddingBottom: 32,
   },
   brandHeader: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: 28,
   },
-  workspaceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(37, 99, 235, 0.28)',
-    borderRadius: RADII.full,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginTop: 14,
-    gap: 6,
-  },
-  workspaceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2563EB',
-  },
-  workspaceBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#38BDF8',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  card: {
-    backgroundColor: '#12141A',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#232632',
-    padding: SPACING.xxl,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  titleSection: {
-    marginBottom: SPACING.md,
-  },
-  loginTitle: {
-    fontSize: 18,
+  brandTitle: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#F8FAFC',
-    letterSpacing: 0.2,
+    letterSpacing: 1.5,
+    marginTop: 10,
   },
-  loginDescription: {
-    fontSize: 12,
+  brandSubtitle: {
+    fontSize: 13,
     color: '#94A3B8',
-    lineHeight: 18,
     marginTop: 4,
   },
-  rolesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  roleChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+  card: {
+    backgroundColor: '#121419',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.25)',
-    borderRadius: RADII.xs,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    gap: 6,
-  },
-  bdaDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#38BDF8',
-  },
-  roleChipText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#38BDF8',
-    letterSpacing: 0.6,
+    borderColor: '#23252E',
+    padding: 20,
+    marginBottom: 24,
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderWidth: 1,
-    borderRadius: RADII.sm,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    marginBottom: SPACING.md,
-    gap: 8,
-  },
-  errorIconDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
   },
   errorText: {
-    color: '#F87171',
     fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
-  },
-  formSection: {
-    gap: SPACING.md,
-    marginBottom: SPACING.xl,
+    color: '#F87171',
+    lineHeight: 18,
   },
   inputGroup: {
-    gap: 6,
+    marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#CBD5E1',
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#161922',
+    backgroundColor: '#181A21',
     borderWidth: 1,
-    borderColor: '#262A38',
-    borderRadius: RADII.md,
-    paddingHorizontal: SPACING.md,
+    borderColor: '#272A36',
+    borderRadius: 10,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#F8FAFC',
-    fontSize: 13,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   inputFocused: {
-    borderColor: '#2563EB',
-    backgroundColor: '#181C26',
+    borderColor: '#FFFFFF',
   },
   passwordWrapper: {
     position: 'relative',
     justifyContent: 'center',
   },
   passwordInput: {
-    paddingRight: 64,
+    paddingRight: 56,
   },
   passwordToggle: {
     position: 'absolute',
-    right: SPACING.md,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    right: 14,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
   },
   passwordToggleText: {
-    color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
   },
   submitButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: RADII.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 8,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
-    letterSpacing: 0.4,
+    color: '#090A0E',
   },
-  footerSection: {
-    alignItems: 'center',
-    marginTop: SPACING.xl,
-  },
-  footerText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  serverSection: {
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#1E2330',
-  },
-  serverRow: {
+  footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 'auto',
+    paddingTop: 16,
   },
-  serverDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
-    marginRight: 6,
-  },
-  serverLabel: {
-    flex: 1,
-    fontSize: 11,
+  serverInfoText: {
+    fontSize: 12,
     color: '#64748B',
-    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
   },
-  serverValue: {
-    color: '#94A3B8',
+  changeServerButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  changeServerText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: '#94A3B8',
+    textDecorationLine: 'underline',
   },
-  serverChangeBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: 'rgba(37, 99, 235, 0.12)',
-  },
-  serverChangeText: {
-    color: '#38BDF8',
-    fontSize: 10,
-    fontWeight: '700',
-  },
+
+  // Modal Styles
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
-    backgroundColor: '#11131A',
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#121419',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#262A38',
+    borderColor: '#23252E',
     padding: 20,
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: '#F8FAFC',
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: 12,
     color: '#94A3B8',
-    lineHeight: 16,
     marginBottom: 16,
+    lineHeight: 16,
   },
   presetContainer: {
-    gap: 10,
+    gap: 8,
     marginBottom: 16,
   },
   presetBtn: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#181C26',
+    backgroundColor: '#181A21',
     borderWidth: 1,
-    borderColor: '#262A38',
+    borderColor: '#272A36',
+    borderRadius: 10,
+    padding: 12,
   },
   presetBtnActive: {
-    borderColor: '#2563EB',
-    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-  },
-  presetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#1F222C',
   },
   presetName: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#F8FAFC',
-  },
-  badgeCloud: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeCloudText: {
-    color: '#10B981',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  badgeDev: {
-    backgroundColor: 'rgba(234, 179, 8, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeDevText: {
-    color: '#EAB308',
-    fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: '#F1F5F9',
+    marginBottom: 2,
   },
   presetUrl: {
     fontSize: 11,
     color: '#64748B',
-    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
   },
   customSection: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   customLabel: {
     fontSize: 11,
@@ -735,83 +575,75 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   customInput: {
-    backgroundColor: '#181C26',
+    backgroundColor: '#181A21',
     borderWidth: 1,
-    borderColor: '#262A38',
+    borderColor: '#272A36',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 12,
+    fontSize: 13,
     color: '#FFFFFF',
-    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
   },
   testBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+    backgroundColor: '#20222B',
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderColor: '#2E303C',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
     marginBottom: 12,
   },
   testBtnText: {
-    color: '#38BDF8',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: '#F8FAFC',
   },
   testResultBanner: {
     padding: 10,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   testSuccessBanner: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
   },
   testErrorBanner: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   testResultText: {
     fontSize: 11,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   testSuccessText: {
-    color: '#34D399',
-    fontWeight: '600',
+    color: '#4ADE80',
   },
   testErrorText: {
     color: '#F87171',
-    fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 10,
     justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 4,
   },
   modalCancelBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#181C26',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
   },
   modalCancelText: {
-    color: '#94A3B8',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
+    color: '#94A3B8',
   },
   modalSaveBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
+    borderRadius: 8,
   },
   modalSaveText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
+    color: '#090A0E',
   },
 });

@@ -22,8 +22,25 @@ export interface EmployeeSession {
 
 const STORAGE_KEY = 'heeyaku_employee_session';
 let memoryCache: EmployeeSession | null = null;
+const unauthorizedListeners: Set<() => void> = new Set();
 
 export const authStorage = {
+  onUnauthorized(listener: () => void): () => void {
+    unauthorizedListeners.add(listener);
+    return () => {
+      unauthorizedListeners.delete(listener);
+    };
+  },
+
+  notifyUnauthorized(): void {
+    unauthorizedListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (err) {
+        console.warn('Error in unauthorized listener:', err);
+      }
+    });
+  },
   async saveSession(session: EmployeeSession): Promise<void> {
     memoryCache = session;
     try {
