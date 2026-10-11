@@ -62,4 +62,28 @@ export const authStorage = {
       console.warn('Failed to remove session from native storage:', e);
     }
   },
+
+  async saveServerUrl(url: string): Promise<void> {
+    try {
+      if (CallTracker?.setItem) {
+        await CallTracker.setItem('heeyaku_server_url', url);
+      }
+    } catch (e) {
+      console.warn('Failed to save server URL to native storage:', e);
+    }
+  },
+
+  async getServerUrl(): Promise<string | null> {
+    try {
+      if (CallTracker?.getItem) {
+        const raw = await CallTracker.getItem('heeyaku_server_url');
+        if (raw && typeof raw === 'string') {
+          return raw.trim();
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to get server URL from native storage:', e);
+    }
+    return null;
+  },
 };

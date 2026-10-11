@@ -1,16 +1,39 @@
+import { authStorage } from '../services/authStorage';
+
 /**
  * HEEYAKU Mobile API Configuration.
- * Configured for USB/ADB Connected Android Device (adb reverse tcp:3000 tcp:3000)
+ * Defaults to live production HTTPS backend (https://heeyaku.vercel.app).
  */
 export const BACKEND_PRESETS = {
-  ADB_DEVICE: 'http://localhost:3000',
   PRODUCTION: 'https://heeyaku.vercel.app',
+  ADB_DEVICE: 'http://localhost:3000',
+  EMULATOR_LOOPBACK: 'http://10.0.2.2:3000',
 } as const;
 
-export let API_BASE_URL: string = BACKEND_PRESETS.ADB_DEVICE;
+export let API_BASE_URL: string = BACKEND_PRESETS.PRODUCTION;
 
 export function setApiBaseUrl(url: string): void {
+  if (!url || !url.trim()) return;
   API_BASE_URL = url.trim().replace(/\/+$/, '');
+}
+
+export async function initApiBaseUrl(): Promise<string> {
+  try {
+    const saved = await authStorage.getServerUrl();
+    if (saved && saved.trim()) {
+      API_BASE_URL = saved.trim().replace(/\/+$/, '');
+    } else {
+      API_BASE_URL = BACKEND_PRESETS.PRODUCTION;
+    }
+  } catch (e) {
+    API_BASE_URL = BACKEND_PRESETS.PRODUCTION;
+  }
+  return API_BASE_URL;
+}
+
+export async function saveApiBaseUrl(url: string): Promise<void> {
+  setApiBaseUrl(url);
+  await authStorage.saveServerUrl(API_BASE_URL);
 }
 
 export const API_ENDPOINTS = {

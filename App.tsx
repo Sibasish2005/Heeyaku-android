@@ -7,6 +7,7 @@ import { AppNavigator } from './src/components/navigation/AppNavigator';
 import { CallOutcomeModal } from './src/components/outcome/CallOutcomeModal';
 import { CallRecord } from './src/types';
 import { authStorage, EmployeeProfile } from './src/services/authStorage';
+import { initApiBaseUrl } from './src/config/api';
 import { LoginScreen } from './src/screens/LoginScreen';
 
 function MainApp({ onLogout }: { onLogout: () => void }) {
@@ -97,6 +98,7 @@ export default function App() {
   useEffect(() => {
     async function checkAuth() {
       try {
+        await initApiBaseUrl();
         const session = await authStorage.getSession();
         if (session?.token && session.employee) {
           setCurrentEmployee(session.employee);

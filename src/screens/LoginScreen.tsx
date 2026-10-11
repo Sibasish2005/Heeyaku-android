@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import { COLORS, RADII, SPACING } from '../theme/colors';
 import { HeeyakuLogo } from '../components/common/HeeyakuLogo';
 import { apiClient } from '../services/apiClient';
 import { authStorage, EmployeeProfile } from '../services/authStorage';
+import { API_BASE_URL, BACKEND_PRESETS, saveApiBaseUrl } from '../config/api';
 
 interface LoginScreenProps {
   onLoginSuccess: (employee: EmployeeProfile) => void;
@@ -28,6 +30,66 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [isIdentifierFocused, setIsIdentifierFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const passwordInputRef = useRef<any>(null);
+
+  // Server URL Configuration state
+  const [currentServer, setCurrentServer] = useState<string>(API_BASE_URL);
+  const [showServerModal, setShowServerModal] = useState(false);
+  const [customServerInput, setCustomServerInput] = useState('');
+  const [isTestingServer, setIsTestingServer] = useState(false);
+  const [serverTestResult, setServerTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setCurrentServer(API_BASE_URL);
+  }, []);
+
+  const testServerConnection = async (targetUrl: string) => {
+    setIsTestingServer(true);
+    setServerTestResult(null);
+    const cleanUrl = targetUrl.trim().replace(/\/+$/, '');
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(`${cleanUrl}/api/employee/auth/login`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      // If we got a response back (200, 400, 405), the server is alive and reachable!
+      if (res.status === 200 || res.status === 405 || res.status === 400) {
+        setServerTestResult({
+          success: true,
+          message: 'Connected successfully! Server is online and responding.',
+        });
+      } else {
+        setServerTestResult({
+          success: false,
+          message: `Server reachable but returned HTTP ${res.status}.`,
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Connection failed';
+      setServerTestResult({
+        success: false,
+        message: `Cannot reach ${cleanUrl}: ${msg}`,
+      });
+    } finally {
+      setIsTestingServer(false);
+    }
+  };
+
+  const handleApplyServer = async (newUrl: string) => {
+    const clean = newUrl.trim().replace(/\/+$/, '');
+    if (!clean) return;
+    await saveApiBaseUrl(clean);
+    setCurrentServer(clean);
+    setShowServerModal(false);
+    setServerTestResult(null);
+    setErrorMessage(null);
+  };
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
@@ -200,6 +262,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <Text style={styles.submitButtonText}>Sign In to BDA Workspace</Text>
             )}
           </TouchableOpacity>
+
+          {/* Server Connection Indicator */}
+          <View style={styles.serverSection}>
+            <View style={styles.serverRow}>
+              <View style={styles.serverDot} />
+              <Text style={styles.serverLabel} numberOfLines={1}>
+                Server:{' '}
+                <Text style={styles.serverValue}>
+                  {currentServer.replace(/^https?:\/\//, '')}
+                </Text>
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setCustomServerInput(currentServer);
+                  setServerTestResult(null);
+                  setShowServerModal(true);
+                }}
+                style={styles.serverChangeBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.serverChangeText}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         {/* Security & RBAC Footer */}
@@ -210,6 +295,118 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         </View>
 
       </ScrollView>
+
+      {/* Server Configuration Modal */}
+      <Modal
+        visible={showServerModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowServerModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Backend Server Connection</Text>
+            <Text style={styles.modalSubtitle}>
+              Select the server endpoint for BDA telephony and CRM synchronization.
+            </Text>
+
+            {/* Presets */}
+            <View style={styles.presetContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.presetBtn,
+                  customServerInput === BACKEND_PRESETS.PRODUCTION && styles.presetBtnActive,
+                ]}
+                onPress={() => {
+                  setCustomServerInput(BACKEND_PRESETS.PRODUCTION);
+                  testServerConnection(BACKEND_PRESETS.PRODUCTION);
+                }}>
+                <View style={styles.presetHeader}>
+                  <Text style={styles.presetName}>Cloud Production</Text>
+                  <View style={styles.badgeCloud}>
+                    <Text style={styles.badgeCloudText}>Live SSL</Text>
+                  </View>
+                </View>
+                <Text style={styles.presetUrl}>{BACKEND_PRESETS.PRODUCTION}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.presetBtn,
+                  customServerInput === BACKEND_PRESETS.ADB_DEVICE && styles.presetBtnActive,
+                ]}
+                onPress={() => {
+                  setCustomServerInput(BACKEND_PRESETS.ADB_DEVICE);
+                  testServerConnection(BACKEND_PRESETS.ADB_DEVICE);
+                }}>
+                <View style={styles.presetHeader}>
+                  <Text style={styles.presetName}>Local USB / ADB Bridge</Text>
+                  <View style={styles.badgeDev}>
+                    <Text style={styles.badgeDevText}>Dev</Text>
+                  </View>
+                </View>
+                <Text style={styles.presetUrl}>{BACKEND_PRESETS.ADB_DEVICE}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Custom URL Input */}
+            <View style={styles.customSection}>
+              <Text style={styles.customLabel}>Server URL (or Local IP)</Text>
+              <TextInput
+                value={customServerInput}
+                onChangeText={setCustomServerInput}
+                placeholder="https://heeyaku.vercel.app or http://192.168.1.X:3000"
+                placeholderTextColor="#64748B"
+                style={styles.customInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Test Connection Button */}
+            <TouchableOpacity
+              style={styles.testBtn}
+              disabled={isTestingServer}
+              onPress={() => testServerConnection(customServerInput)}>
+              {isTestingServer ? (
+                <ActivityIndicator size="small" color="#38BDF8" />
+              ) : (
+                <Text style={styles.testBtnText}>⚡ Test Connection</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Test Result Feedback */}
+            {serverTestResult && (
+              <View
+                style={[
+                  styles.testResultBanner,
+                  serverTestResult.success ? styles.testSuccessBanner : styles.testErrorBanner,
+                ]}>
+                <Text
+                  style={[
+                    styles.testResultText,
+                    serverTestResult.success ? styles.testSuccessText : styles.testErrorText,
+                  ]}>
+                  {serverTestResult.message}
+                </Text>
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowServerModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={() => handleApplyServer(customServerInput)}>
+                <Text style={styles.modalSaveText}>Save & Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -410,5 +607,211 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
     letterSpacing: 0.3,
+  },
+  serverSection: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E2330',
+  },
+  serverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  serverDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 6,
+  },
+  serverLabel: {
+    flex: 1,
+    fontSize: 11,
+    color: '#64748B',
+    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
+  },
+  serverValue: {
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  serverChangeBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(37, 99, 235, 0.12)',
+  },
+  serverChangeText: {
+    color: '#38BDF8',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: '#11131A',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#262A38',
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 16,
+    marginBottom: 16,
+  },
+  presetContainer: {
+    gap: 10,
+    marginBottom: 16,
+  },
+  presetBtn: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#181C26',
+    borderWidth: 1,
+    borderColor: '#262A38',
+  },
+  presetBtnActive: {
+    borderColor: '#2563EB',
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+  },
+  presetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  presetName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  badgeCloud: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeCloudText: {
+    color: '#10B981',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  badgeDev: {
+    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  badgeDevText: {
+    color: '#EAB308',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  presetUrl: {
+    fontSize: 11,
+    color: '#64748B',
+    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
+  },
+  customSection: {
+    marginBottom: 12,
+  },
+  customLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginBottom: 6,
+  },
+  customInput: {
+    backgroundColor: '#181C26',
+    borderWidth: 1,
+    borderColor: '#262A38',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'android' ? 'monospace' : undefined,
+  },
+  testBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    marginBottom: 12,
+  },
+  testBtnText: {
+    color: '#38BDF8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  testResultBanner: {
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  testSuccessBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  testErrorBanner: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  testResultText: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  testSuccessText: {
+    color: '#34D399',
+    fontWeight: '600',
+  },
+  testErrorText: {
+    color: '#F87171',
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'flex-end',
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#181C26',
+  },
+  modalCancelText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modalSaveBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+  },
+  modalSaveText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

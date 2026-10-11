@@ -96,7 +96,7 @@ async function authenticatedRequest(url: string, options: RequestInit = {}): Pro
     return parsed;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Network request failed.';
-    return { success: false, error: message };
+    return { success: false, error: `Could not connect to server (${message}).` };
   }
 }
 
@@ -111,7 +111,10 @@ export const apiClient = {
       return await parseResponse(response);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Network request failed.';
-      return { success: false, error: message };
+      return {
+        success: false,
+        error: `Could not connect to server at ${API_ENDPOINTS.login}. (${message})`,
+      };
     }
   },
 
