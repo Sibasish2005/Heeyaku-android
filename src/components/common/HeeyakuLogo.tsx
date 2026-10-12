@@ -28,13 +28,13 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
   textColor = '#FFFFFF',
   taglineColor = '#94A3B8',
 }) => {
-  // Base SVG grid is 64 x 54
-  const scale = size / 64;
-  const barHeight = 11.5 * scale;
-  const barRadius = 4 * scale;
-  const dotSize = 10 * scale;
-  const iconHeight = 48 * scale;
-  const containerRadius = 14 * scale;
+  // Base grid is 252 x 244, scaled to fit inside container
+  const scale = (size * 0.72) / 252;
+  const markWidth = 252 * scale;
+  const markHeight = 244 * scale;
+  const r = 22 * scale;
+  const barHeight = 66 * scale;
+  const containerRadius = 14 * (size / 64);
 
   const iconElement = (
     <View
@@ -45,65 +45,76 @@ export const HeeyakuLogo: React.FC<HeeyakuLogoProps> = ({
           height: size,
           borderRadius: containerRadius,
           backgroundColor: showBackground ? '#0B1F33' : 'transparent',
+          justifyContent: 'center',
+          alignItems: 'center',
         },
       ]}>
       <View
         style={{
-          width: 48 * scale,
-          height: iconHeight,
-          justifyContent: 'space-between',
+          width: markWidth,
+          height: markHeight,
+          position: 'relative',
         }}>
-        {/* Top Bar (Full width: 64 in grid) */}
+        {/* Top Bar (longest): sharp top-left & bottom-right, rounded top-right & bottom-left */}
         <View
           style={{
-            width: 48 * scale,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: markWidth,
             height: barHeight,
-            borderRadius: barRadius,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: r,
+            borderBottomRightRadius: 0,
+            borderBottomLeftRadius: r,
             backgroundColor: '#FFFFFF',
           }}
         />
 
-        {/* Middle Bar (41 in 64 grid -> 64%) */}
+        {/* Middle Bar (medium, right-aligned): sharp top-left, top-right & bottom-right, rounded bottom-left */}
         <View
           style={{
-            width: 30.75 * scale,
+            position: 'absolute',
+            top: 89 * scale,
+            right: 0,
+            width: 162 * scale,
             height: barHeight,
-            borderRadius: barRadius,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+            borderBottomLeftRadius: r,
             backgroundColor: '#FFFFFF',
-            alignSelf: 'flex-end',
           }}
         />
 
-        {/* Bottom Row: Dot + Short Bar (25 in 64 grid -> 39%) */}
+        {/* Bottom Bar (shortest, right-aligned): sharp top-left & top-right, rounded bottom-left & bottom-right */}
         <View
           style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
+            position: 'absolute',
+            top: 178 * scale,
+            right: 0,
+            width: 92 * scale,
             height: barHeight,
-          }}>
-          {/* Electric Blue Dot */}
-          <View
-            style={{
-              width: dotSize,
-              height: dotSize,
-              borderRadius: dotSize / 2,
-              backgroundColor: '#2563EB',
-              marginLeft: 1.5 * scale,
-            }}
-          />
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: r,
+            borderBottomLeftRadius: r,
+            backgroundColor: '#FFFFFF',
+          }}
+        />
 
-          {/* Short Bar */}
-          <View
-            style={{
-              width: 18.75 * scale,
-              height: barHeight,
-              borderRadius: barRadius,
-              backgroundColor: '#FFFFFF',
-            }}
-          />
-        </View>
+        {/* Electric Blue Dot: centered under top-bar overhang */}
+        <View
+          style={{
+            position: 'absolute',
+            left: (46.5 - 22) * scale,
+            top: (176 - 22) * scale,
+            width: 44 * scale,
+            height: 44 * scale,
+            borderRadius: 22 * scale,
+            backgroundColor: '#2563EB',
+          }}
+        />
       </View>
     </View>
   );
