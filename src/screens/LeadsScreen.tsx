@@ -72,11 +72,21 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
     try {
       const res = await apiClient.getAssignedLeads();
       if (res.success && Array.isArray(res.leads)) {
-        setLeads(res.leads);
-        assignedLeadsService.setMemoryLeads(res.leads);
-        if (CallTracker?.setItem) {
-          CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(res.leads)).catch(() => {});
-        }
+        setLeads((prev) => {
+          const map = new Map<string, LeadItem>();
+          for (const l of prev) {
+            map.set(l.id, l);
+          }
+          for (const l of res.leads) {
+            map.set(l.id, { ...(map.get(l.id) || {}), ...l });
+          }
+          const merged = Array.from(map.values());
+          assignedLeadsService.setMemoryLeads(merged);
+          if (CallTracker?.setItem) {
+            CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(merged)).catch(() => {});
+          }
+          return merged;
+        });
       }
     } catch (err) {
       console.warn('Failed to load assigned leads:', err);
@@ -158,6 +168,9 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
     const isNew = item.status === 'NEW' || item.status === 'ASSIGNED';
     const isContacted = item.status === 'CONTACTED';
     const isConverted = item.status === 'CONVERTED';
+    const isInterested = item.status === 'INTERESTED';
+    const isFollowUp = item.status === 'FOLLOW_UP';
+    const isCallBack = item.status === 'CALL_BACK';
     const hasConnectedCall = Boolean(item.hasConnectedCall);
 
     // WhatsApp button is enabled strictly and ONLY if there is a verified connected call
@@ -165,10 +178,19 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
 
     return (
       <Card variant="default" style={styles.leadCard}>
-        {/* Contacted Watermark Stamp: ONLY shown if connected call exists and status is contacted/converted */}
-        {hasConnectedCall && (isContacted || isConverted) && (
+        {/* Contacted Watermark Stamp: ALWAYS shown if verified connected call exists */}
+        {hasConnectedCall && (
           <View style={styles.contactedWatermark} pointerEvents="none">
             <Text style={styles.contactedWatermarkText}>CONTACTED</Text>
+          </View>
+        )}
+
+        {/* Reassigned / Escalated status banner */}
+        {item.isReassigned && (
+          <View style={styles.reassignedBanner}>
+            <Text style={styles.reassignedBannerText}>
+              ⚡ Escalated to {item.assignedEmployeeName || 'Team Lead'} (Your Call & KPI recorded)
+            </Text>
           </View>
         )}
 
@@ -188,6 +210,9 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
               isNew && styles.statusPillNew,
               isContacted && styles.statusPillContacted,
               isConverted && styles.statusPillConverted,
+              isInterested && styles.statusPillInterested,
+              isFollowUp && styles.statusPillFollowUp,
+              isCallBack && styles.statusPillCallBack,
             ]}>
             <Text style={styles.statusPillText}>{item.status}</Text>
           </TouchableOpacity>
@@ -487,6 +512,29 @@ const styles = StyleSheet.create({
   },
   statusPillConverted: {
     backgroundColor: 'rgba(34, 197, 94, 0.15)',
+  },
+  statusPillInterested: {
+    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+  },
+  statusPillFollowUp: {
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+  },
+  statusPillCallBack: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  reassignedBanner: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  reassignedBannerText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#60A5FA',
   },
   statusPillText: {
     fontSize: 10,

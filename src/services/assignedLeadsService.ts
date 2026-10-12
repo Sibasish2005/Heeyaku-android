@@ -9,10 +9,10 @@ export interface AssignedLead {
   leadCode: string;
   name: string;
   phoneNumber: string;
-  company?: string;
+  company?: string | null;
   status: string;
-  disposition?: string;
-  assignedEmployeeId?: string;
+  disposition?: string | null;
+  assignedEmployeeId?: string | null;
   [key: string]: any;
 }
 
@@ -68,11 +68,21 @@ export const assignedLeadsService = {
     try {
       const res = await apiClient.getAssignedLeads();
       if (res.success && Array.isArray(res.leads)) {
-        updateLeadPhoneSet(res.leads);
-        if (CallTracker?.setItem) {
-          CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(res.leads)).catch(() => {});
+        // Merge with existing cached leads so leads never vanish
+        const existing = cachedLeadsMemory.length > 0 ? cachedLeadsMemory : await this.getCachedLeads();
+        const map = new Map<string, AssignedLead>();
+        for (const l of existing) {
+          map.set(l.id, l);
         }
-        return res.leads;
+        for (const l of res.leads) {
+          map.set(l.id, { ...(map.get(l.id) || {}), ...l });
+        }
+        const merged = Array.from(map.values());
+        updateLeadPhoneSet(merged);
+        if (CallTracker?.setItem) {
+          CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(merged)).catch(() => {});
+        }
+        return merged;
       }
     } catch (err) {
       console.warn('Failed to fetch assigned leads from server:', err);
@@ -84,7 +94,14 @@ export const assignedLeadsService = {
    * Update leads directly from UI component state (e.g. LeadsScreen)
    */
   setMemoryLeads(leads: AssignedLead[]): void {
-    updateLeadPhoneSet(leads);
+    const map = new Map<string, AssignedLead>();
+    for (const l of cachedLeadsMemory) {
+      map.set(l.id, l);
+    }
+    for (const l of leads) {
+      map.set(l.id, { ...(map.get(l.id) || {}), ...l });
+    }
+    updateLeadPhoneSet(Array.from(map.values()));
   },
 
   /**

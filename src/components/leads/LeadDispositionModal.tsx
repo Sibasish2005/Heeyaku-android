@@ -26,6 +26,11 @@ export interface LeadItem {
   assignedAt?: string | null;
   updatedAt?: string | null;
   hasConnectedCall?: boolean;
+  isProspect?: boolean;
+  isReassigned?: boolean;
+  assignedEmployeeName?: string | null;
+  assignedEmployeeRole?: string | null;
+  originalBdaName?: string | null;
 }
 
 interface LeadDispositionModalProps {
