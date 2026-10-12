@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,7 +15,6 @@ import { COLORS, RADII, SPACING } from '../theme/colors';
 import { HeeyakuLogo } from '../components/common/HeeyakuLogo';
 import { apiClient } from '../services/apiClient';
 import { authStorage, EmployeeProfile } from '../services/authStorage';
-import { API_BASE_URL, BACKEND_PRESETS, saveApiBaseUrl } from '../config/api';
 
 interface LoginScreenProps {
   onLoginSuccess: (employee: EmployeeProfile) => void;
@@ -34,20 +32,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const scrollRef = useRef<any>(null);
   const passwordInputRef = useRef<any>(null);
 
-  // Server URL Configuration state
-  const [currentServer, setCurrentServer] = useState<string>(API_BASE_URL);
-  const [showServerModal, setShowServerModal] = useState(false);
-  const [customServerInput, setCustomServerInput] = useState('');
-  const [isTestingServer, setIsTestingServer] = useState(false);
-  const [serverTestResult, setServerTestResult] = useState<{
-    success: boolean;
-    message: string;
-  } | null>(null);
-
-  useEffect(() => {
-    setCurrentServer(API_BASE_URL);
-  }, []);
-
   // Ensure inputs stay visible when keyboard opens on small screens
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
@@ -59,51 +43,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       showSub.remove();
     };
   }, [isPasswordFocused]);
-
-  const testServerConnection = async (targetUrl: string) => {
-    setIsTestingServer(true);
-    setServerTestResult(null);
-    const cleanUrl = targetUrl.trim().replace(/\/+$/, '');
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(`${cleanUrl}/api/employee/auth/login`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (res.status === 200 || res.status === 405 || res.status === 400) {
-        setServerTestResult({
-          success: true,
-          message: 'Connected successfully. Server is online.',
-        });
-      } else {
-        setServerTestResult({
-          success: false,
-          message: `Server reachable but returned HTTP ${res.status}.`,
-        });
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Connection failed';
-      setServerTestResult({
-        success: false,
-        message: `Cannot reach server: ${msg}`,
-      });
-    } finally {
-      setIsTestingServer(false);
-    }
-  };
-
-  const handleApplyServer = async (newUrl: string) => {
-    const clean = newUrl.trim().replace(/\/+$/, '');
-    if (!clean) return;
-    await saveApiBaseUrl(clean);
-    setCurrentServer(clean);
-    setShowServerModal(false);
-    setServerTestResult(null);
-    setErrorMessage(null);
-  };
 
   const handleLogin = async () => {
     Keyboard.dismiss();
@@ -260,126 +199,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Minimal Understated Server Footer */}
-        <View style={styles.footerRow}>
-          <Text style={styles.serverInfoText}>
-            Server: {currentServer.replace(/^https?:\/\//, '')}
-          </Text>
-          <TouchableOpacity
-            onPress={() => {
-              setCustomServerInput(currentServer);
-              setServerTestResult(null);
-              setShowServerModal(true);
-            }}
-            style={styles.changeServerButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.changeServerText}>Change</Text>
-          </TouchableOpacity>
-        </View>
-
       </ScrollView>
-
-      {/* Clean Server Configuration Modal */}
-      <Modal
-        visible={showServerModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowServerModal(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Server Connection</Text>
-            <Text style={styles.modalSubtitle}>
-              Configure the backend endpoint for mobile synchronization.
-            </Text>
-
-            {/* Presets */}
-            <View style={styles.presetContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.presetBtn,
-                  customServerInput === BACKEND_PRESETS.PRODUCTION && styles.presetBtnActive,
-                ]}
-                onPress={() => {
-                  setCustomServerInput(BACKEND_PRESETS.PRODUCTION);
-                  testServerConnection(BACKEND_PRESETS.PRODUCTION);
-                }}>
-                <Text style={styles.presetName}>Cloud Production (Default)</Text>
-                <Text style={styles.presetUrl}>{BACKEND_PRESETS.PRODUCTION}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.presetBtn,
-                  customServerInput === BACKEND_PRESETS.ADB_DEVICE && styles.presetBtnActive,
-                ]}
-                onPress={() => {
-                  setCustomServerInput(BACKEND_PRESETS.ADB_DEVICE);
-                  testServerConnection(BACKEND_PRESETS.ADB_DEVICE);
-                }}>
-                <Text style={styles.presetName}>Local USB / Dev Bridge</Text>
-                <Text style={styles.presetUrl}>{BACKEND_PRESETS.ADB_DEVICE}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Custom URL Input */}
-            <View style={styles.customSection}>
-              <Text style={styles.customLabel}>Custom Server URL</Text>
-              <TextInput
-                value={customServerInput}
-                onChangeText={setCustomServerInput}
-                placeholder="https://heeyaku.vercel.app"
-                placeholderTextColor="#64748B"
-                style={styles.customInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/* Test Connection Button */}
-            <TouchableOpacity
-              style={styles.testBtn}
-              disabled={isTestingServer}
-              onPress={() => testServerConnection(customServerInput)}>
-              {isTestingServer ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.testBtnText}>Test Connection</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Test Result Feedback */}
-            {serverTestResult && (
-              <View
-                style={[
-                  styles.testResultBanner,
-                  serverTestResult.success ? styles.testSuccessBanner : styles.testErrorBanner,
-                ]}>
-                <Text
-                  style={[
-                    styles.testResultText,
-                    serverTestResult.success ? styles.testSuccessText : styles.testErrorText,
-                  ]}>
-                  {serverTestResult.message}
-                </Text>
-              </View>
-            )}
-
-            {/* Action Buttons */}
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setShowServerModal(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSaveBtn}
-                onPress={() => handleApplyServer(customServerInput)}>
-                <Text style={styles.modalSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -488,162 +308,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#090A0E',
   },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 'auto',
-    paddingTop: 16,
-  },
-  serverInfoText: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  changeServerButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  changeServerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-    textDecorationLine: 'underline',
-  },
 
-  // Modal Styles
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#121419',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#23252E',
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginBottom: 16,
-    lineHeight: 16,
-  },
-  presetContainer: {
-    gap: 8,
-    marginBottom: 16,
-  },
-  presetBtn: {
-    backgroundColor: '#181A21',
-    borderWidth: 1,
-    borderColor: '#272A36',
-    borderRadius: 10,
-    padding: 12,
-  },
-  presetBtnActive: {
-    borderColor: '#FFFFFF',
-    backgroundColor: '#1F222C',
-  },
-  presetName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#F1F5F9',
-    marginBottom: 2,
-  },
-  presetUrl: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  customSection: {
-    marginBottom: 14,
-  },
-  customLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginBottom: 6,
-  },
-  customInput: {
-    backgroundColor: '#181A21',
-    borderWidth: 1,
-    borderColor: '#272A36',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  testBtn: {
-    backgroundColor: '#20222B',
-    borderWidth: 1,
-    borderColor: '#2E303C',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  testBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#F8FAFC',
-  },
-  testResultBanner: {
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 14,
-  },
-  testSuccessBanner: {
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-  },
-  testErrorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  testResultText: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  testSuccessText: {
-    color: '#4ADE80',
-  },
-  testErrorText: {
-    color: '#F87171',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 4,
-  },
-  modalCancelBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  modalCancelText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  modalSaveBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  modalSaveText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#090A0E',
-  },
 });

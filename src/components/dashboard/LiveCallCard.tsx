@@ -23,11 +23,11 @@ export const LiveCallCard: React.FC<LiveCallCardProps> = ({
         <View style={styles.liveStatusRow}>
           <View style={[styles.pulseDot, !isOffhook && styles.pulseDotConnecting]} />
           <Text style={[styles.liveStatusText, isOffhook ? styles.textGreen : styles.textAmber]}>
-            {isOffhook ? 'LIVE CALL CONNECTED' : 'DIALING LEAD (RINGING)...'}
+            {isOffhook ? 'Active Call' : 'Calling Lead...'}
           </Text>
         </View>
         <Badge
-          label={isOffhook ? 'Answered' : 'Connecting'}
+          label={isOffhook ? 'Connected' : 'Ringing'}
           variant={isOffhook ? 'glow' : 'outline'}
           size="sm"
         />
@@ -42,7 +42,7 @@ export const LiveCallCard: React.FC<LiveCallCardProps> = ({
 
       <View style={[styles.timerContainer, isOffhook && styles.timerContainerActive]}>
         <Text style={[styles.timerLabel, isOffhook && styles.timerLabelActive]}>
-          {isOffhook ? 'REAL CONNECTED TALK TIME' : 'TALK TIMER PAUSED (AWAITING PICKUP)'}
+          {isOffhook ? 'Talk Time' : 'Waiting for answer...'}
         </Text>
         <Text style={[styles.timerValue, isOffhook && styles.timerValueActive]}>
           {formatDuration(currentDuration)}

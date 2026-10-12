@@ -25,7 +25,32 @@ interface LeadsScreenProps {
   onMakeCall: (phoneNumber: string, contactName?: string) => void;
 }
 
-const FILTER_STATUSES = ['ALL', 'NEW', 'ASSIGNED', 'CONTACTED', 'INTERESTED', 'FOLLOW_UP', 'CONVERTED'];
+const FILTER_TABS = [
+  { id: 'ALL', label: 'All' },
+  { id: 'NEW', label: 'New' },
+  { id: 'ASSIGNED', label: 'Assigned' },
+  { id: 'CONTACTED', label: 'Contacted' },
+  { id: 'INTERESTED', label: 'Interested' },
+  { id: 'FOLLOW_UP', label: 'Follow-up' },
+  { id: 'CONVERTED', label: 'Converted' },
+];
+
+const formatLeadStatus = (status: string) => {
+  switch (status) {
+    case 'NEW': return 'New';
+    case 'ASSIGNED': return 'Assigned';
+    case 'CONTACTED': return 'Contacted';
+    case 'INTERESTED': return 'Interested';
+    case 'FOLLOW_UP': return 'Follow-up';
+    case 'CALL_BACK': return 'Call Back';
+    case 'CONVERTED': return 'Converted';
+    case 'NOT_INTERESTED': return 'Not Interested';
+    case 'NO_ANSWER': return 'No Answer';
+    case 'BUSY': return 'Busy';
+    case 'WRONG_NUMBER': return 'Wrong Number';
+    default: return status;
+  }
+};
 
 export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
   const [leads, setLeads] = useState<LeadItem[]>([]);
@@ -128,12 +153,12 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
     const isPendingCall = !lead.hasConnectedCall || lead.status === 'NEW' || lead.status === 'ASSIGNED';
     if (isPendingCall) {
       Alert.alert(
-        'Call Required Before WhatsApp',
-        'Please call and connect with the student first through Heeyaku (talk time > 0s). WhatsApp is unlocked once a connected discussion is recorded.',
+        'Call Required',
+        'Please connect with the lead first (talk time > 0s) before messaging on WhatsApp.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Call Student Now',
+            text: 'Call Now',
             onPress: () => {
               onMakeCall(lead.phoneNumber, lead.name);
             },
@@ -178,22 +203,6 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
 
     return (
       <Card variant="default" style={styles.leadCard}>
-        {/* Contacted Watermark Stamp: ALWAYS shown if verified connected call exists */}
-        {hasConnectedCall && (
-          <View style={styles.contactedWatermark} pointerEvents="none">
-            <Text style={styles.contactedWatermarkText}>CONTACTED</Text>
-          </View>
-        )}
-
-        {/* Reassigned / Escalated status banner */}
-        {item.isReassigned && (
-          <View style={styles.reassignedBanner}>
-            <Text style={styles.reassignedBannerText}>
-              ⚡ Escalated to {item.assignedEmployeeName || 'Team Lead'} (Your Call & KPI recorded)
-            </Text>
-          </View>
-        )}
-
         {/* Top Meta Row */}
         <View style={styles.cardHeader}>
           <View style={styles.nameRow}>
@@ -201,6 +210,12 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
             <View style={styles.codeBadge}>
               <Text style={styles.codeText}>{item.leadCode}</Text>
             </View>
+            {hasConnectedCall && (
+              <View style={styles.connectedDotBadge}>
+                <View style={styles.connectedDot} />
+                <Text style={styles.connectedDotText}>Connected</Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -211,10 +226,19 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
               isContacted && styles.statusPillContacted,
               isConverted && styles.statusPillConverted,
               isInterested && styles.statusPillInterested,
-              isFollowUp && styles.statusPillFollowUp,
-              isCallBack && styles.statusPillCallBack,
+              (isFollowUp || isCallBack) && styles.statusPillFollowUp,
             ]}>
-            <Text style={styles.statusPillText}>{item.status}</Text>
+            <Text
+              style={[
+                styles.statusPillText,
+                isNew && styles.statusTextNew,
+                isContacted && styles.statusTextContacted,
+                isConverted && styles.statusTextConverted,
+                isInterested && styles.statusTextInterested,
+                (isFollowUp || isCallBack) && styles.statusTextFollowUp,
+              ]}>
+              {formatLeadStatus(item.status)}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -226,7 +250,10 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
         )}
 
         {/* Phone number */}
-        <Text style={styles.leadPhone}>📞 {item.phoneNumber}</Text>
+        <View style={styles.phoneRow}>
+          <Icon name="call" size={12} color={COLORS.monoMuted} />
+          <Text style={styles.leadPhone}>{item.phoneNumber}</Text>
+        </View>
 
         {/* Action Buttons: Call & WhatsApp */}
         <View style={styles.actionRow}>
@@ -256,7 +283,7 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
                 styles.whatsappButtonText,
                 isWhatsAppDisabled && styles.whatsappButtonTextDisabled,
               ]}>
-              {isWhatsAppDisabled ? 'WhatsApp (Disabled)' : 'WhatsApp'}
+              WhatsApp
             </Text>
           </TouchableOpacity>
         </View>
@@ -292,16 +319,16 @@ export const LeadsScreen: React.FC<LeadsScreenProps> = ({ onMakeCall }) => {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={FILTER_STATUSES}
-            keyExtractor={(item) => item}
+            data={FILTER_TABS}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => {
-              const isSelected = statusFilter === item;
+              const isSelected = statusFilter === item.id;
               return (
                 <TouchableOpacity
-                  onPress={() => setStatusFilter(item)}
+                  onPress={() => setStatusFilter(item.id)}
                   style={[styles.chip, isSelected && styles.chipSelected]}>
                   <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {item}
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               );
@@ -449,31 +476,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  contactedWatermark: {
-    position: 'absolute',
-    right: 14,
-    top: 36,
-    transform: [{ rotate: '-12deg' }],
-    borderWidth: 1.5,
-    borderColor: 'rgba(52, 211, 153, 0.35)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(52, 211, 153, 0.08)',
-    zIndex: 1,
-  },
-  contactedWatermarkText: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 2.2,
-    color: 'rgba(52, 211, 153, 0.55)',
-    textTransform: 'uppercase',
-  },
+
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   nameRow: {
     flexDirection: 'row',
@@ -498,64 +506,87 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.monoMuted,
   },
+  connectedDotBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  connectedDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#34D399',
+  },
+  connectedDotText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#34D399',
+  },
   statusPill: {
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     backgroundColor: COLORS.surfaceSubtle,
   },
   statusPillNew: {
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
   },
   statusPillContacted: {
-    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
   },
   statusPillConverted: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
   },
   statusPillInterested: {
-    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
   },
   statusPillFollowUp: {
-    backgroundColor: 'rgba(168, 85, 247, 0.2)',
-  },
-  statusPillCallBack: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  reassignedBanner: {
-    backgroundColor: 'rgba(59, 130, 246, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  reassignedBannerText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#60A5FA',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
   },
   statusPillText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: COLORS.monoWhite,
+  },
+  statusTextNew: {
+    color: '#38BDF8',
+  },
+  statusTextContacted: {
+    color: '#FBBF24',
+  },
+  statusTextConverted: {
+    color: '#4ADE80',
+  },
+  statusTextInterested: {
+    color: '#C084FC',
+  },
+  statusTextFollowUp: {
+    color: '#60A5FA',
   },
   leadCourse: {
     fontSize: 12,
     color: COLORS.brandCyan,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   leadCourseSubtle: {
     fontSize: 11,
     color: COLORS.textTertiary,
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: SPACING.md,
   },
   leadPhone: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
     fontWeight: '500',
   },
   actionRow: {

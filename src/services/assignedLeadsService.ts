@@ -68,21 +68,13 @@ export const assignedLeadsService = {
     try {
       const res = await apiClient.getAssignedLeads();
       if (res.success && Array.isArray(res.leads)) {
-        // Merge with existing cached leads so leads never vanish
-        const existing = cachedLeadsMemory.length > 0 ? cachedLeadsMemory : await this.getCachedLeads();
-        const map = new Map<string, AssignedLead>();
-        for (const l of existing) {
-          map.set(l.id, l);
-        }
-        for (const l of res.leads) {
-          map.set(l.id, { ...(map.get(l.id) || {}), ...l });
-        }
-        const merged = Array.from(map.values());
-        updateLeadPhoneSet(merged);
+        // Authoritative server sync: replace local cache with current assigned leads from server
+        const updatedLeads = res.leads;
+        updateLeadPhoneSet(updatedLeads);
         if (CallTracker?.setItem) {
-          CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(merged)).catch(() => {});
+          CallTracker.setItem(CACHED_LEADS_KEY, JSON.stringify(updatedLeads)).catch(() => {});
         }
-        return merged;
+        return updatedLeads;
       }
     } catch (err) {
       console.warn('Failed to fetch assigned leads from server:', err);

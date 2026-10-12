@@ -105,7 +105,7 @@ export const CallOutcomeModal: React.FC<CallOutcomeModalProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Call Outcome (KPI)</Text>
+              <Text style={styles.title}>Call Outcome</Text>
               <Text style={styles.subtitle} numberOfLines={1}>
                 {call.contactName || call.phoneNumber || call.number}
               </Text>
@@ -125,7 +125,7 @@ export const CallOutcomeModal: React.FC<CallOutcomeModalProps> = ({
               onPress={() => handleToggleAnswered(true)}
               style={[styles.connectionTab, isConnected && styles.connectionTabActive]}>
               <Text style={[styles.connectionTabText, isConnected && styles.connectionTabTextActive]}>
-                📞 Spoke with Contact
+                Connected
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -133,7 +133,7 @@ export const CallOutcomeModal: React.FC<CallOutcomeModalProps> = ({
               onPress={() => handleToggleAnswered(false)}
               style={[styles.connectionTab, !isConnected && styles.connectionTabUnconnectedActive]}>
               <Text style={[styles.connectionTabText, !isConnected && styles.connectionTabTextActive]}>
-                📵 No Answer / Busy
+                Unanswered / Busy
               </Text>
             </TouchableOpacity>
           </View>
@@ -142,14 +142,14 @@ export const CallOutcomeModal: React.FC<CallOutcomeModalProps> = ({
           <View style={styles.noticeBanner}>
             <Text style={styles.noticeText}>
               {isConnected
-                ? 'Mandatory KPI: Record discussion outcome to update dashboard metrics and unlock WhatsApp.'
-                : 'Call Not Connected: Call ended with 0s talk time. Record telecom status.'}
+                ? 'Record discussion outcome to update lead status and metrics.'
+                : 'Call ended without connection. Select telecom outcome.'}
             </Text>
           </View>
 
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
             {/* Outcome Selection Grid */}
-            <Text style={styles.sectionLabel}>SELECT DISPOSITION *</Text>
+            <Text style={styles.sectionLabel}>SELECT OUTCOME</Text>
             <View style={styles.chipGrid}>
               {outcomes.map(outcome => {
                 const isSelected = selectedOutcomeId === outcome.id;

@@ -172,7 +172,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.modalTitle}>
-                {thenOpenWhatsApp ? 'Update KPI to Unlock WhatsApp' : 'Update Lead Disposition (KPI)'}
+                {thenOpenWhatsApp ? 'Update Status to Continue' : 'Update Lead Status'}
               </Text>
               <Text style={styles.leadSubtitle}>
                 {lead.name} • {lead.phoneNumber}
@@ -187,7 +187,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
           {!hasConnectedCall && (
             <View style={styles.noCallBanner}>
               <View style={styles.noCallHeader}>
-                <Text style={styles.noCallTitle}>📞 No Connected Call Yet</Text>
+                <Text style={styles.noCallTitle}>Call Required</Text>
                 {onMakeCall && (
                   <TouchableOpacity
                     activeOpacity={0.8}
@@ -201,7 +201,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
                 )}
               </View>
               <Text style={styles.noCallText}>
-                A connected call (talk time &gt; 0s) is strictly required to mark this student as Contacted or Interested.
+                A connected call is required to set status to Contacted or Interested.
               </Text>
             </View>
           )}
@@ -209,7 +209,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
           {thenOpenWhatsApp && (
             <View style={styles.noticeBanner}>
               <Text style={styles.noticeText}>
-                Please log discussion outcome to the database before redirecting to WhatsApp.
+                Record discussion outcome before opening WhatsApp.
               </Text>
             </View>
           )}
@@ -222,7 +222,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
 
           <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
             {/* Status Selection */}
-            <Text style={styles.fieldLabel}>Pipeline Outcome / Status *</Text>
+            <Text style={styles.fieldLabel}>Lead Status</Text>
             <View style={styles.optionsContainer}>
               {STATUS_OPTIONS.map((opt) => {
                 const isSelected = selectedStatus === opt.id;
@@ -249,7 +249,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
                       </Text>
                       {isLocked && (
                         <View style={styles.lockBadge}>
-                          <Text style={styles.lockBadgeText}>🔒 Call Required</Text>
+                          <Text style={styles.lockBadgeText}>Call needed</Text>
                         </View>
                       )}
                     </View>
@@ -260,11 +260,11 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
             </View>
 
             {/* Notes */}
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Discussion Notes (Optional)</Text>
+            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Notes (Optional)</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
-              placeholder="e.g. Student requested fee structure and 2026 batch details"
+              placeholder="Add key discussion details..."
               placeholderTextColor={COLORS.textTertiary}
               multiline
               numberOfLines={3}
@@ -285,7 +285,7 @@ export const LeadDispositionModal: React.FC<LeadDispositionModalProps> = ({
                 <ActivityIndicator color={COLORS.monoWhite} size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
-                  {thenOpenWhatsApp ? 'Save KPI & Open WhatsApp' : 'Save KPI Disposition'}
+                  {thenOpenWhatsApp ? 'Save & Open WhatsApp' : 'Save Status'}
                 </Text>
               )}
             </TouchableOpacity>
