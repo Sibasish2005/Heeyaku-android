@@ -324,6 +324,7 @@ export function useCallTracker() {
             await offlineQueue.enqueueCalls([syncPayload]);
           } else {
             console.log('Call & KPI successfully synced to backend:', res);
+            assignedLeadsService.refreshAssignedLeads().catch(() => {});
           }
         } catch (syncErr) {
           console.warn('Failed to sync call to backend, queued offline:', syncErr);
