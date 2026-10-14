@@ -2,10 +2,10 @@ import { authStorage } from '../services/authStorage';
 
 /**
  * HEEYAKU Mobile API Configuration.
- * Defaults to live production HTTPS backend (https://heeyaku.vercel.app).
+ * Defaults to live production HTTPS backend (https://heeyaku.com).
  */
 export const BACKEND_PRESETS = {
-  PRODUCTION: 'https://heeyaku.vercel.app',
+  PRODUCTION: 'https://heeyaku.com',
   ADB_DEVICE: 'http://localhost:3000',
   EMULATOR_LOOPBACK: 'http://10.0.2.2:3000',
 } as const;
