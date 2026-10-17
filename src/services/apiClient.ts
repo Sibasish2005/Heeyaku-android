@@ -37,9 +37,7 @@ async function parseResponse(response: Response): Promise<ApiResponse> {
     // Non-JSON response
     return {
       success: false,
-      error: response.ok
-        ? 'Unexpected response from server.'
-        : `Server returned HTTP ${response.status} (${response.statusText || 'Error'}).`,
+      error: 'Unable to process server response. Please try again.',
       status: response.status,
     };
   }
@@ -56,14 +54,14 @@ async function parseResponse(response: Response): Promise<ApiResponse> {
   if (response.status === 429) {
     return {
       success: false,
-      error: json.error || 'Too many requests. Please wait a moment.',
+      error: 'Too many requests. Please wait a moment before trying again.',
       isRateLimited: true,
       status: 429,
     };
   }
 
   if (!response.ok && !json.error) {
-    json.error = `Server returned HTTP ${response.status}`;
+    json.error = 'Unable to complete request. Please try again.';
   }
 
   return {
@@ -76,7 +74,7 @@ async function parseResponse(response: Response): Promise<ApiResponse> {
 async function authenticatedRequest(url: string, options: RequestInit = {}): Promise<ApiResponse> {
   const session = await authStorage.getSession();
   if (!session?.token) {
-    return { success: false, error: 'Unauthenticated session', isUnauthorized: true };
+    return { success: false, error: 'Authentication required', isUnauthorized: true };
   }
 
   try {
@@ -93,14 +91,12 @@ async function authenticatedRequest(url: string, options: RequestInit = {}): Pro
 
     const parsed = await parseResponse(response);
     if (parsed.isUnauthorized) {
-      console.warn('[API] Received 401 Unauthorized, clearing session');
       await authStorage.clearSession();
       authStorage.notifyUnauthorized();
     }
     return parsed;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Network request failed.';
-    return { success: false, error: `Could not connect to server (${message}).` };
+  } catch {
+    return { success: false, error: 'Network connection error. Please try again.' };
   }
 }
 
@@ -118,11 +114,10 @@ export const apiClient = {
         body: JSON.stringify({ identifier, password, deviceId, deviceName }),
       });
       return await parseResponse(response);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Network request failed.';
+    } catch {
       return {
         success: false,
-        error: `Could not connect to server at ${API_ENDPOINTS.login}. (${message})`,
+        error: 'Unable to reach the server. Please check your connection.',
       };
     }
   },
@@ -140,11 +135,10 @@ export const apiClient = {
         body: JSON.stringify({ tempToken, code, deviceId, deviceName }),
       });
       return await parseResponse(response);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Network request failed.';
+    } catch {
       return {
         success: false,
-        error: `Could not connect to server at ${API_ENDPOINTS.verifyDeviceOtp}. (${message})`,
+        error: 'Unable to reach the server. Please check your connection.',
       };
     }
   },
@@ -157,11 +151,10 @@ export const apiClient = {
         body: JSON.stringify({ tempToken, deviceId }),
       });
       return await parseResponse(response);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Network request failed.';
+    } catch {
       return {
         success: false,
-        error: `Could not connect to server at ${API_ENDPOINTS.resendDeviceOtp}. (${message})`,
+        error: 'Unable to reach the server. Please check your connection.',
       };
     }
   },

@@ -97,20 +97,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         setOtpCode('');
         setResendCooldown(60);
         setInfoMessage(
-          `First-time login detected on this device. A 6-digit Clerk verification code has been sent to ${res.maskedEmail || 'your email'}.`
+          `First-time login detected on this device. A 6-digit verification code has been sent to ${res.maskedEmail || 'your email'}.`
         );
         setTimeout(() => otpInputRef.current?.focus(), 300);
         return;
       }
 
       if (!res.success || !res.token) {
-        setErrorMessage(res.error || 'Authentication failed. Please check your credentials.');
+        setErrorMessage(res.error || 'Authentication failed. Please verify your credentials.');
         return;
       }
 
       if (res.employee?.role && res.employee.role !== 'BDA') {
         setErrorMessage(
-          'Mobile app access is restricted to Business Development Associates (BDA). Please log in via the Web Portal.'
+          'Mobile app access is restricted to Business Development Associates (BDA).'
         );
         return;
       }
@@ -121,9 +121,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       });
 
       onLoginSuccess(res.employee);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not connect to server.';
-      setErrorMessage(message);
+    } catch {
+      setErrorMessage('Unable to connect. Please check your network and try again.');
     } finally {
       setLoading(false);
     }
@@ -161,7 +160,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         if (res.sessionExpired) {
           setIsOtpStep(false);
         }
-        setErrorMessage(res.error || 'Invalid verification code. Please try again.');
+        setErrorMessage(res.error || 'Verification failed. Please check your code and try again.');
         return;
       }
 
@@ -176,9 +175,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       });
 
       onLoginSuccess(res.employee);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Verification request failed.';
-      setErrorMessage(message);
+    } catch {
+      setErrorMessage('Verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -196,12 +194,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       if (res.success && res.tempToken) {
         setTempToken(res.tempToken);
         setResendCooldown(60);
-        setInfoMessage(`A fresh 6-digit Clerk code has been sent to ${res.maskedEmail || maskedEmail}.`);
+        setInfoMessage(`A fresh 6-digit verification code has been sent to ${res.maskedEmail || maskedEmail}.`);
       } else {
-        setErrorMessage(res.error || 'Failed to resend verification code.');
+        setErrorMessage(res.error || 'Unable to resend code. Please try again.');
       }
-    } catch (err: unknown) {
-      setErrorMessage('Network error while requesting new code.');
+    } catch {
+      setErrorMessage('Network error. Please try again.');
     } finally {
       setResending(false);
     }
@@ -250,7 +248,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <>
               {/* Employee ID or Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Clerk Email or Employee ID</Text>
+                <Text style={styles.inputLabel}>Email or Employee ID</Text>
                 <TextInput
                   value={identifier}
                   onChangeText={(val) => {
@@ -332,15 +330,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               </TouchableOpacity>
             </>
           ) : (
-            /* STEP 2: CLERK DEVICE OTP VERIFICATION */
+            /* STEP 2: DEVICE VERIFICATION */
             <View style={styles.otpSection}>
               <View style={styles.otpHeader}>
                 <View style={styles.otpBadge}>
-                  <Text style={styles.otpBadgeText}>🔐 FIRST-TIME DEVICE VERIFICATION</Text>
+                  <Text style={styles.otpBadgeText}>🔐 DEVICE VERIFICATION</Text>
                 </View>
                 <Text style={styles.otpTitle}>Verify Your Device</Text>
                 <Text style={styles.otpSubtitle}>
-                  A 6-digit Clerk verification code has been dispatched to:
+                  A 6-digit verification code has been sent to:
                 </Text>
                 <View style={styles.emailChip}>
                   <Text style={styles.emailChipText}>{maskedEmail}</Text>
@@ -348,7 +346,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Enter 6-Digit Clerk Code</Text>
+                <Text style={styles.inputLabel}>Enter 6-Digit Code</Text>
                 <TextInput
                   ref={otpInputRef}
                   value={otpCode}
@@ -401,7 +399,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     disabled={resending}
                     activeOpacity={0.7}>
                     <Text style={styles.resendLinkText}>
-                      {resending ? 'Sending...' : 'Resend Clerk Code'}
+                      {resending ? 'Sending...' : 'Resend Code'}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -418,9 +416,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
           {/* Security & Access Restriction Notice */}
           <View style={styles.securityNotice}>
-            <Text style={styles.securityNoticeText}>🔒 Authenticated via Clerk • BDA Access Only</Text>
+            <Text style={styles.securityNoticeText}>🔒 Secure Portal • BDA Access Only</Text>
             <Text style={styles.securitySubtext}>
-              Accounts are provisioned by your Administrator. Self sign-up is disabled.
+              Accounts are managed by your administrator.
             </Text>
           </View>
         </View>
