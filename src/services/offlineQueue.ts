@@ -147,4 +147,12 @@ export const offlineQueue = {
     const queue = await loadQueueFromStorage();
     return queue.length;
   },
+
+  /**
+   * Clears all queued items from memory and storage.
+   */
+  async clearQueue(): Promise<void> {
+    await saveQueueToStorage([]);
+  },
 };
+
