@@ -102,7 +102,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         <View style={styles.brandHeader}>
           <HeeyakuLogo size={40} />
           <Text style={styles.brandTitle}>HEEYAKU</Text>
-          <Text style={styles.brandSubtitle}>Sign in to your employee account</Text>
+          <Text style={styles.brandSubtitle}>Sales Associate Portal • BDA Only</Text>
         </View>
 
         {/* Clean, Normal Login Card */}
@@ -115,7 +115,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
           {/* Employee ID or Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Employee ID or Email</Text>
+            <Text style={styles.inputLabel}>Clerk Email or Employee ID</Text>
             <TextInput
               value={identifier}
               onChangeText={(val) => {
@@ -197,6 +197,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <Text style={styles.submitButtonText}>Sign In</Text>
             )}
           </TouchableOpacity>
+
+          {/* Security & Access Restriction Notice */}
+          <View style={styles.securityNotice}>
+            <Text style={styles.securityNoticeText}>🔒 Authenticated via Clerk • BDA Access Only</Text>
+            <Text style={styles.securitySubtext}>
+              Accounts are provisioned by your Administrator. Self sign-up is disabled.
+            </Text>
+          </View>
         </View>
 
       </ScrollView>
@@ -308,5 +316,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#090A0E',
   },
-
+  securityNotice: {
+    marginTop: 20,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  securityNoticeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  securitySubtext: {
+    fontSize: 11,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
 });
