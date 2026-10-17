@@ -85,6 +85,8 @@ async function authenticatedRequest(url: string, options: RequestInit = {}): Pro
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.token}`,
+        'x-employee-token': session.token,
+        'x-authorization': `Bearer ${session.token}`,
         ...(options.headers || {}),
       },
     });
