@@ -7,56 +7,21 @@ const projectRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(projectRoot, '..');
 const isWindows = os.platform() === 'win32';
 
-let virtualDrive = null;
-
-function cleanup() {
-  if (virtualDrive) {
-    try {
-      execSync(`subst ${virtualDrive} /D`, { stdio: 'ignore' });
-      console.log(`[Build] Cleaned up temporary drive ${virtualDrive}`);
-    } catch (_) {}
-    virtualDrive = null;
-  }
-}
-
-process.on('SIGINT', cleanup);
-process.on('SIGTERM', cleanup);
-process.on('exit', cleanup);
-
 async function main() {
   console.log('====================================================');
   console.log('🚀 BUILDING PRODUCTION RELEASE APK FOR CALLTRACKER');
   console.log('====================================================');
 
-  let workDir = projectRoot;
-
-  if (isWindows) {
-    for (const letter of ['Y', 'Z', 'X', 'W', 'V']) {
-      try {
-        if (!fs.existsSync(`${letter}:\\`)) {
-          virtualDrive = `${letter}:`;
-          break;
-        }
-      } catch (_) {}
-    }
-
-    if (virtualDrive) {
-      console.log(`[Build] Mapping ${virtualDrive} -> ${projectRoot} (bypasses Windows MAX_PATH)...`);
-      execSync(`subst ${virtualDrive} "${projectRoot}"`, { stdio: 'inherit' });
-      workDir = virtualDrive;
-    }
-  }
-
-  const androidDir = path.join(workDir, 'android');
+  const androidDir = path.join(projectRoot, 'android');
   const gradlew = isWindows ? path.join(androidDir, 'gradlew.bat') : path.join(androidDir, 'gradlew');
 
   console.log(`[Build] Running Gradle assembleRelease in ${androidDir}...`);
-  execSync(`"${gradlew}" -p "${androidDir}" assembleRelease`, {
+  execSync(`"${gradlew}" assembleRelease`, {
     stdio: 'inherit',
     cwd: androidDir,
   });
 
-  const builtApk = path.join(projectRoot, 'android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
+  const builtApk = path.join(androidDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
   if (!fs.existsSync(builtApk)) {
     throw new Error(`Expected APK not found at: ${builtApk}`);
   }
@@ -81,7 +46,7 @@ async function main() {
 
       console.log('🚀 Launching CallTracker on device...');
       execSync('adb shell am start -n com.calltracker/.MainActivity', { stdio: 'inherit' });
-      console.log('🎉 App launched with updated proxy-safe authentication!');
+      console.log('🎉 App launched with Clerk native device verification!');
     } else {
       console.log('ℹ️ No active ADB device found. APK is ready for distribution.');
     }
@@ -89,12 +54,10 @@ async function main() {
     console.warn('[ADB] Device install notice:', adbErr.message);
   }
 
-  cleanup();
   console.log('\n🎉 BUILD AND DEPLOYMENT COMPLETE!');
 }
 
 main().catch(err => {
-  cleanup();
   console.error('\n❌ BUILD FAILED:', err.message);
   process.exit(1);
 });
