@@ -103,4 +103,24 @@ export const authStorage = {
     }
     return null;
   },
+
+  async getDeviceId(): Promise<string> {
+    const DEVICE_ID_KEY = 'heeyaku_device_id';
+    try {
+      if (CallTracker?.getItem) {
+        const existing = await CallTracker.getItem(DEVICE_ID_KEY);
+        if (existing && typeof existing === 'string' && existing.trim()) {
+          return existing.trim();
+        }
+      }
+    } catch (_) {}
+
+    const newId = `dev_${Math.random().toString(36).substring(2, 10)}_${Date.now().toString(36)}`;
+    try {
+      if (CallTracker?.setItem) {
+        await CallTracker.setItem(DEVICE_ID_KEY, newId);
+      }
+    } catch (_) {}
+    return newId;
+  },
 };

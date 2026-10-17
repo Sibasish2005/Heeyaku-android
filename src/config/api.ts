@@ -44,6 +44,8 @@ export const API_ENDPOINTS = {
   leadDisposition: (leadId: string) => `${API_BASE_URL}/api/employee/leads/${leadId}/disposition`,
   get syncCalls() { return `${API_BASE_URL}/api/employee/calls/sync`; },
   get analytics() { return `${API_BASE_URL}/api/employee/analytics`; },
+  get verifyDeviceOtp() { return `${API_BASE_URL}/api/employee/auth/verify-device-otp`; },
+  get resendDeviceOtp() { return `${API_BASE_URL}/api/employee/auth/resend-device-otp`; },
 };
 
 

@@ -105,12 +105,17 @@ async function authenticatedRequest(url: string, options: RequestInit = {}): Pro
 }
 
 export const apiClient = {
-  async login(identifier: string, password: string): Promise<ApiResponse> {
+  async login(
+    identifier: string,
+    password: string,
+    deviceId?: string,
+    deviceName?: string
+  ): Promise<ApiResponse> {
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier, password, deviceId, deviceName }),
       });
       return await parseResponse(response);
     } catch (err: unknown) {
@@ -118,6 +123,45 @@ export const apiClient = {
       return {
         success: false,
         error: `Could not connect to server at ${API_ENDPOINTS.login}. (${message})`,
+      };
+    }
+  },
+
+  async verifyDeviceOtp(
+    tempToken: string,
+    code: string,
+    deviceId: string,
+    deviceName?: string
+  ): Promise<ApiResponse> {
+    try {
+      const response = await fetchWithTimeout(API_ENDPOINTS.verifyDeviceOtp, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tempToken, code, deviceId, deviceName }),
+      });
+      return await parseResponse(response);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Network request failed.';
+      return {
+        success: false,
+        error: `Could not connect to server at ${API_ENDPOINTS.verifyDeviceOtp}. (${message})`,
+      };
+    }
+  },
+
+  async resendDeviceOtp(tempToken: string, deviceId: string): Promise<ApiResponse> {
+    try {
+      const response = await fetchWithTimeout(API_ENDPOINTS.resendDeviceOtp, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tempToken, deviceId }),
+      });
+      return await parseResponse(response);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Network request failed.';
+      return {
+        success: false,
+        error: `Could not connect to server at ${API_ENDPOINTS.resendDeviceOtp}. (${message})`,
       };
     }
   },
